@@ -1,5 +1,5 @@
 (function () {
-  var cfg = window.PAPER_DASHBOARD_CONFIG || { apiBase: "", pollMs: 20000, displayBuild: "desk-visual-1" };
+  var cfg = window.PAPER_DASHBOARD_CONFIG || { apiBase: "", pollMs: 20000, displayBuild: "desk-visual-3" };
   var page = 1;
   var lastFetchMs = null;
   var lastState = null;
@@ -28,6 +28,33 @@
 
   function dash(value) {
     return value == null || value === "" ? "—" : String(value);
+  }
+
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch];
+    });
+  }
+
+  function field(label, value, tone) {
+    return '<div class="field"><span>' + esc(label) + '</span><b class="tone-' + esc(tone || "neutral") + '">' + esc(value) + "</b></div>";
+  }
+
+  function toneNode(id, value, tone) {
+    var node = document.getElementById(id);
+    if (!node) return;
+    node.textContent = value;
+    node.className = "num tone-" + tone;
+  }
+
+  function pageFreshness(state) {
+    if (!base()) return "unconfigured";
+    if (lastFetchMs == null) return "cached";
+    var health = (state && state.health) || {};
+    var presence = window.PaperDashboard.classifyPresence(Date.now(), health.heartbeat_ms, health.status, lastFetchMs);
+    if (presence === "ACTIVE") return "live";
+    if (presence === "STALE") return "stale";
+    return String(presence || "not-live").toLowerCase();
   }
 
   function table(headers, rows) {
@@ -164,19 +191,23 @@
     pill("presence", model.presence);
     pill("service", model.service);
     text("lifetime", model.lifetimeBaseline);
-    text("cash", model.cash);
+    var account = state.account || {};
+    toneNode("cash", model.cash, "market");
+    text("gross", window.PaperDashboard.formatUsdc(account.gross_notional) + " / " + window.PaperDashboard.formatUsdc(account.gross_notional_cap));
+    text("margin", window.PaperDashboard.formatUsdc(account.margin_used));
+    text("lev", account.leverage == null ? "—" : String(account.leverage) + "x ceiling");
     text("equity", model.equity);
-    text("realized", model.realized);
-    text("unrealized", model.unrealized);
-    text("return", model.lifetimeReturn + " (" + model.lifetimeReturnPct + ")");
-    text("daily-pnl", model.dailyPnl);
+    toneNode("realized", window.PaperDashboard.formatSignedUsdc(account.realized_pnl), window.PaperDashboard.pnlTone(account.realized_pnl));
+    toneNode("unrealized", window.PaperDashboard.formatSignedUsdc(account.unrealized_pnl), window.PaperDashboard.pnlTone(account.unrealized_pnl));
+    toneNode("return", window.PaperDashboard.formatSignedUsdc(account.lifetime_return_usdc) + " (" + model.lifetimeReturnPct + ")", window.PaperDashboard.pnlTone(account.lifetime_return_usdc));
+    toneNode("daily-pnl", window.PaperDashboard.formatSignedUsdc((account.daily || {}).pnl_usdc), window.PaperDashboard.pnlTone((account.daily || {}).pnl_usdc));
+    toneNode("funding", model.funding, "funding");
     text("daily-base", model.dailyBaseline);
     text("daily-consumed", model.dailyConsumed);
     text("daily-cap", model.dailyCap);
     text("daily-left", model.dailyRemaining);
     text("fees", model.fees);
     text("fee-used", model.feeUsed);
-    text("funding", model.funding);
     text("wins", model.wins + " / " + model.losses);
     text("winrate", model.winRate);
     text("dd", model.maxDd);
@@ -215,34 +246,88 @@
     var markets = state.markets || {};
     var order = ["BTC", "ETH", "SOL", "HYPE"].filter(function (coin) { return markets[coin]; });
     Object.keys(markets).forEach(function (coin) { if (order.indexOf(coin) === -1) order.push(coin); });
+    var fresh = pageFreshness(state);
+    var count = window.PaperDashboard.openCount(state.positions);
+    var countNode = document.getElementById("pos-count");
+    if (countNode) {
+      countNode.textContent = count == null ? "—" : String(count);
+      countNode.className = "pos-count" + (count === 0 ? " zero" : "");
+    }
+    var freshCopy = {
+      live: "This response is current. A card says LIVE only when its market feed is live.",
+      stale: "STALE — the heartbeat or this fetch is old. These positions are not live.",
+      cached: "CACHED — last response only. These positions are not a live read.",
+      offline: "OFFLINE — no current response. Nothing here is live.",
+      unconfigured: "API base is not set. Open positions are not invented.",
+      halt: "HALT — the engine is not trading this book as live.",
+      stopped: "STOPPED — the worker is not live.",
+      degraded: "DEGRADED — the feed is not a clean live book."
+    };
+    text("pos-fresh", freshCopy[fresh] || "NOT LIVE — do not treat this book as current.");
+    var views = (state.positions || []).map(function (pos) {
+      return window.PaperDashboard.positionView(pos, markets[pos.coin] || {}, fresh);
+    });
+    document.getElementById("positions").innerHTML = views.length ? views.map(function (view) {
+      var klass = view.side === "long" ? "long" : view.side === "short" ? "short" : "";
+      return '<article class="pos-card ' + klass + '">' +
+        '<div class="pos-head"><div class="symbol">' + esc(view.coin) + '</div>' +
+        '<span class="badge ' + (view.side === "long" ? "long" : view.side === "short" ? "short" : "warn") + '">' + esc(view.sideIcon + " " + view.sideLabel) + "</span>" +
+        '<span class="badge ' + (view.live ? "live" : view.freshness === "stale" || view.freshness === "cached" ? view.freshness : "bad") + '">' + esc(view.freshnessLabel) + "</span></div>" +
+        '<div class="fields">' +
+        field("QTY", view.qty, "neutral") +
+        field("ENTRY NOTIONAL", view.notionalEntry, "market") +
+        field("MARK NOTIONAL", view.notionalMark, "market") +
+        field("ENTRY", view.entry, "market") +
+        field("MARK", view.mark, "market") +
+        field("STOP", view.stop, "risk") +
+        field("TARGET", view.target, "positive") +
+        field("UNREALIZED PNL", view.unrealized, view.pnlTone) +
+        field("LEVERAGE", view.leverage, "neutral") +
+        field("MARGIN" + (view.marginBasis ? " (" + view.marginBasis + ")" : ""), view.margin, "neutral") +
+        field("SETUP", view.setup, "history") +
+        "</div></article>";
+    }).join("") : '<div class="empty-book"><strong>' + (count == null ? "—" : String(count)) + "</strong><p>" + (fresh === "unconfigured" ? "No account is loaded. This page does not invent an open position." : "No open paper positions.") + "</p></div>";
+    document.getElementById("levels").innerHTML = views.length ? views.map(function (view) {
+      return '<article class="level-card"><div class="card-head"><b>' + esc(view.coin) + " " + esc(view.sideLabel) + '</b><span class="badge ' + (view.live ? "live" : view.freshness === "stale" || view.freshness === "cached" ? view.freshness : "bad") + '">' + esc(view.freshnessLabel) + "</span></div><div class=\"fields\">" +
+        field("STOP", view.stop, "risk") +
+        field("TARGET", view.target, "positive") +
+        field("TRAIL", view.trail, "risk") +
+        field("EXIT STATUS", view.exitStatus, "neutral") +
+        "</div></article>";
+    }).join("") : '<div class="empty-book"><strong>' + (count == null ? "—" : String(count)) + "</strong><p>No exit levels. There is no open position.</p></div>";
     document.getElementById("markets").innerHTML = order.map(function (coin) {
       var item = markets[coin];
       var feed = item.feed || "missing";
-      var kind = feed === "live" ? "good" : feed === "stale" ? "warn" : "bad";
-      var px = item.mark_status === "known" ? window.PaperDashboard.formatUsdc(item.mark) : "mark unknown";
-      return '<article class="panel market"><div class="section-title"><h2>' + coin + '</h2><span class="badge ' + kind + '">' + dash(feed) + '</span></div><div class="px">' + px + '</div><div class="bidask">bid ' + dash(item.bid) + " · ask " + dash(item.ask) + "</div></article>";
+      var kind = fresh !== "live" ? "cached" : feed === "live" ? "live" : feed === "stale" ? "stale" : "bad";
+      var label = fresh !== "live" ? (fresh === "cached" ? "CACHED" : fresh === "stale" ? "STALE" : "NOT LIVE") : String(feed).toUpperCase();
+      var px = item.mark_status === "known" ? window.PaperDashboard.formatPrice(item.mark) : "mark unknown";
+      return '<article class="market"><div class="card-head"><h2 class="market-title">' + esc(coin) + '</h2><span class="badge ' + kind + '">' + esc(label) + '</span></div><div class="px">' + esc(px) + '</div><div class="bidask">bid ' + esc(window.PaperDashboard.formatPrice(item.bid)) + " · ask " + esc(window.PaperDashboard.formatPrice(item.ask)) + "</div></article>";
     }).join("");
-    var positions = state.positions || [];
-    document.getElementById("positions").innerHTML = positions.length ? table(
-      ["Asset", "Side", "Setup", "Qty", "Entry", "Stop", "Target", "Unrealized", "Mark"],
-      positions.map(function (pos) {
-        return [pos.coin, pos.side, pos.setup, dash(pos.qty), dash(pos.entry_px), dash(pos.stop_px), dash(pos.target_px), pos.unrealized_pnl == null ? "—" : window.PaperDashboard.formatUsdc(pos.unrealized_pnl), dash(pos.mark_status)];
-      })
-    ) : '<p class="sub">No open paper positions.</p>';
     var funnel = state.funnel_12h || {};
     var reasons = funnel.reject_reasons || {};
-    document.getElementById("funnel").innerHTML = table(
-      ["Observed", "Setup", "Risk/cost", "Entry", "Exit", "Rejections"],
-      [[dash(funnel.observed), dash(funnel.setup), dash(funnel.risk_cost), dash(funnel.entry), dash(funnel.exit), Object.keys(reasons).map(function (key) { return key + " " + reasons[key]; }).join(" · ") || "—"]]
-    );
+    var reasonText = Object.keys(reasons).map(function (key) { return key + " " + reasons[key]; }).join(" · ") || "—";
+    document.getElementById("funnel").innerHTML = [
+      ["OBSERVED", funnel.observed],
+      ["SETUP", funnel.setup],
+      ["RISK / COST", funnel.risk_cost],
+      ["ENTRY", funnel.entry],
+      ["EXIT", funnel.exit],
+      ["REJECTIONS", reasonText]
+    ].map(function (pair) {
+      return '<article class="stat"><span>' + esc(pair[0]) + "</span><b>" + esc(dash(pair[1])) + "</b></article>";
+    }).join("");
     var activity = state.assets_activity || {};
-    document.getElementById("activity").innerHTML = table(
-      ["Asset", "Closed", "Wins", "Losses", "Net", "Fees", "Funding"],
-      order.map(function (coin) {
-        var row = activity[coin] || {};
-        return [coin, dash(row.closed_trades), dash(row.wins), dash(row.losses), row.net_pnl == null ? "—" : window.PaperDashboard.formatUsdc(row.net_pnl), row.fees == null ? "—" : window.PaperDashboard.formatUsdc(row.fees), row.funding_net == null ? "—" : window.PaperDashboard.formatUsdc(row.funding_net)];
-      })
-    );
+    document.getElementById("activity").innerHTML = order.map(function (coin) {
+      var row = activity[coin] || {};
+      return '<article class="asset-card"><div class="card-head"><b class="tone-history">' + esc(coin) + "</b></div><div class=\"fields\">" +
+        field("CLOSED", dash(row.closed_trades), "history") +
+        field("WINS", dash(row.wins), "positive") +
+        field("LOSSES", dash(row.losses), "negative") +
+        field("NET", row.net_pnl == null ? "—" : window.PaperDashboard.formatSignedUsdc(row.net_pnl), window.PaperDashboard.pnlTone(row.net_pnl)) +
+        field("FEES", row.fees == null ? "—" : window.PaperDashboard.formatUsdc(row.fees), "history") +
+        field("FUNDING", row.funding_net == null ? "—" : window.PaperDashboard.formatSignedUsdc(row.funding_net), "funding") +
+        "</div></article>";
+    }).join("");
     var news = (state.risk_context && state.risk_context.optional_news) || {};
     text("context", [
       "market drop " + dash(state.risk_context && state.risk_context.market_wide_drop),
@@ -254,13 +339,21 @@
 
   function renderTrades(payload) {
     var items = (payload && payload.items) || [];
-    document.getElementById("trades").innerHTML = items.length ? table(
-      ["Exit", "Asset", "Setup", "Side", "Qty", "Entry", "Exit px", "Stop", "Target", "Fees", "Net", "Reason"],
-      items.map(function (trade) {
-        var fees = trade.entry_fee == null || trade.exit_fee == null ? "—" : window.PaperDashboard.formatUsdc(Number(trade.entry_fee) + Number(trade.exit_fee));
-        return [window.PaperDashboard.formatTime(trade.exit_ts), trade.coin, trade.setup, trade.side, dash(trade.qty), dash(trade.entry_px), dash(trade.exit_px), dash(trade.stop_px), dash(trade.target_px), fees, trade.net_pnl == null ? "—" : window.PaperDashboard.formatUsdc(trade.net_pnl), dash(trade.exit_reason)];
-      })
-    ) : '<p class="sub">No closed paper trades.</p>';
+    document.getElementById("trades").innerHTML = items.length ? items.map(function (trade) {
+      var view = window.PaperDashboard.tradeView(trade);
+      return '<article class="trade-card"><div class="card-head"><b class="tone-history">' + esc(view.coin) + '</b><span class="badge ' + (view.sideLabel === "LONG" ? "long" : view.sideLabel === "SHORT" ? "short" : "warn") + '">' + esc(view.sideIcon + " " + view.sideLabel) + '</span></div><div class="fields">' +
+        field("EXIT TIME", view.when, "history") +
+        field("SETUP", view.setup, "history") +
+        field("QTY", view.qty, "history") +
+        field("ENTRY", view.entry, "market") +
+        field("EXIT", view.exit, "market") +
+        field("STOP", view.stop, "risk") +
+        field("TARGET", view.target, "positive") +
+        field("FEES", view.fees, "history") +
+        field("NET PNL", view.net, view.pnlTone) +
+        field("REASON", view.reason, "history") +
+        "</div></article>";
+    }).join("") : '<div class="empty-book"><strong>0</strong><p>No closed paper trades in this page.</p></div>';
     text("page", payload ? "page " + payload.page + " / " + Math.max(1, Math.ceil((payload.total || 0) / payload.page_size)) : "");
   }
 

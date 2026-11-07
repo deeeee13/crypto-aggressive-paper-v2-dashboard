@@ -11,7 +11,7 @@
   <div class="shell">
     <header class="top">
       <div>
-        <p class="kicker">HYPERLIQUID PERPS · BTC ETH SOL HYPE · 1x</p>
+        <p class="kicker">HYPERLIQUID PERPS · BTC ETH SOL HYPE</p>
         <h1>PAPER DESK</h1>
         <p class="note" id="note">Read-only public JSON. No wallet. No live orders.</p>
       </div>
@@ -21,15 +21,18 @@
         <span class="badge bad">PAPER</span>
       </div>
     </header>
-    <p class="identity-row">
-      <span>Engine SHA <b id="sha">—</b></span>
-      <span>Display build <b id="display-build">—</b></span>
-      <span>Deploy <b id="deploy">—</b></span>
-      <span>Config <b id="config">—</b></span>
-      <span>Image <b id="image">—</b></span>
-    </p>
+    <section class="panel book" id="book">
+      <div class="section-title">
+        <h2 class="open-title">OPEN POSITIONS</h2>
+        <strong id="pos-count" class="pos-count">—</strong>
+      </div>
+      <p id="pos-fresh" class="fresh-note">—</p>
+      <div id="positions" class="pos-grid"></div>
+    </section>
+
     <section class="hero">
       <article class="panel chart-panel">
+        <p class="eyebrow">EQUITY</p>
         <div class="balance" id="equity">—</div>
         <div class="sub">Lifetime return <span id="return">—</span> · baseline <span id="lifetime">—</span></div>
         <div class="ranges" id="ranges"></div>
@@ -41,47 +44,84 @@
         <p class="sub" id="chart-source">—</p>
       </article>
       <aside class="metrics">
-        <article class="metric"><span>WALLET CASH</span><strong id="cash">—</strong></article>
-        <article class="metric"><span>UNREALIZED</span><strong id="unrealized">—</strong></article>
-        <article class="metric"><span>REALIZED</span><strong id="realized">—</strong></article>
-        <article class="metric"><span>FUNDING NET</span><strong id="funding">—</strong></article>
-        <article class="metric"><span>DAILY PNL</span><strong id="daily-pnl">—</strong></article>
+        <article class="metric tone-market"><span>WALLET CASH</span><strong id="cash" class="num">—</strong></article>
+        <article class="metric" id="unreal-card"><span>UNREALIZED PNL</span><strong id="unrealized" class="num">—</strong></article>
+        <article class="metric" id="real-card"><span>REALIZED PNL</span><strong id="realized" class="num">—</strong></article>
+        <article class="metric" id="day-card"><span>DAILY PNL</span><strong id="daily-pnl" class="num">—</strong></article>
+        <article class="metric tone-funding"><span>FUNDING NET</span><strong id="funding" class="num">—</strong></article>
+        <article class="metric"><span>GROSS / CAP</span><strong id="gross">—</strong></article>
+        <article class="metric"><span>MARGIN USED</span><strong id="margin">—</strong></article>
+        <article class="metric"><span>ACCOUNT CEILING</span><strong id="lev">—</strong></article>
         <article class="metric"><span>WIN RATE</span><strong id="winrate">—</strong></article>
-        <article class="metric wide">
-          <span>DAILY LOSS</span>
-          <strong id="daily-consumed">—</strong>
-          <div class="sub">baseline <span id="daily-base">—</span> · cap <span id="daily-cap">—</span> · left <span id="daily-left">—</span></div>
-          <div class="bar"><i id="loss-bar"></i></div>
-        </article>
-        <article class="metric wide">
-          <span>FEE ALLOWANCE</span>
-          <strong id="fee-left">—</strong>
-          <div class="sub">rolling used <span id="fee-used">—</span> · lifetime fees <span id="fees">—</span> · exits are not blocked</div>
-        </article>
         <article class="metric"><span>WINS / LOSSES</span><strong id="wins">—</strong></article>
         <article class="metric"><span>MAX DRAWDOWN</span><strong id="dd">—</strong></article>
       </aside>
     </section>
-    <section class="markets" id="markets"></section>
-    <section class="lower panel">
-      <div class="section-title">
-        <h2>ACTIVITY</h2>
-        <span class="sub" id="no-trade">—</span>
+
+    <section class="panel section">
+      <div class="section-title"><h2 class="market-title">MARKETS</h2></div>
+      <div class="markets" id="markets"></div>
+    </section>
+
+    <section class="panel section risk-panel">
+      <div class="section-title"><h2 class="risk-title">RISK</h2></div>
+      <div class="risk-grid">
+        <article class="risk-chip used">
+          <span>DAILY USED</span>
+          <strong id="daily-consumed">—</strong>
+        </article>
+        <article class="risk-chip cap">
+          <span>DAILY CAP</span>
+          <strong id="daily-cap">—</strong>
+        </article>
+        <article class="risk-chip left">
+          <span>DAILY REMAINING</span>
+          <strong id="daily-left">—</strong>
+        </article>
       </div>
-      <p class="sub">Last trade <span id="last-trade">—</span> · heartbeat <span id="heartbeat">—</span> · <span id="latency">—</span></p>
-      <div class="scroll" id="funnel"></div>
-      <h2 style="margin-top:14px">OPEN POSITIONS</h2>
-      <div class="scroll" id="positions"></div>
-      <h2 style="margin-top:14px">ASSET ACTIVITY</h2>
-      <div class="scroll" id="activity"></div>
-      <h2 style="margin-top:14px">CLOSED TRADES</h2>
-      <div class="scroll" id="trades"></div>
+      <p class="sub">UTC day baseline <span id="daily-base">—</span></p>
+      <div class="bar" aria-hidden="true"><i id="loss-bar"></i></div>
+      <article class="fee-row">
+        <span>FEE ALLOWANCE LEFT</span>
+        <strong id="fee-left">—</strong>
+        <p class="sub">rolling used <span id="fee-used">—</span> · lifetime fees <span id="fees">—</span> · exits are not blocked</p>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <div class="section-title"><h2 class="level-title">ORDER / EXIT LEVELS</h2></div>
+      <div id="levels" class="pos-grid"></div>
+    </section>
+
+    <section class="panel section">
+      <div class="section-title">
+        <h2 class="history-title">CLOSED TRADES</h2>
+        <span id="page" class="sub"></span>
+      </div>
+      <div id="trades" class="pos-grid"></div>
       <div class="pager">
         <button id="prev" type="button">Previous</button>
         <button id="next" type="button">Next</button>
-        <span id="page" class="sub"></span>
       </div>
-      <p class="sub" id="context" style="margin-top:10px">—</p>
+    </section>
+
+    <section class="panel section diag">
+      <div class="section-title">
+        <h2>ACTIVITY / DIAGNOSTICS</h2>
+        <span class="sub" id="no-trade">—</span>
+      </div>
+      <p class="identity-row">
+        <span>Engine SHA <b id="sha">—</b></span>
+        <span>Display build <b id="display-build">—</b></span>
+        <span>Deploy <b id="deploy">—</b></span>
+        <span>Config <b id="config">—</b></span>
+        <span>Image <b id="image">—</b></span>
+      </p>
+      <p class="sub">Last trade <span id="last-trade">—</span> · heartbeat <span id="heartbeat">—</span> · <span id="latency">—</span></p>
+      <div id="funnel" class="stat-grid"></div>
+      <h2 class="history-title subhead">ASSET ACTIVITY</h2>
+      <div id="activity" class="pos-grid"></div>
+      <p class="sub" id="context">—</p>
     </section>
   </div>
   <script src="config.js"></script>
