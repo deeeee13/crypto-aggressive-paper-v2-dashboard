@@ -1,6 +1,12 @@
 (function (root) {
   var STALE_MS = 45000;
   var OFFLINE_MS = 120000;
+  var RANGES = [
+    { id: "15m", ms: 15 * 60 * 1000 },
+    { id: "1h", ms: 60 * 60 * 1000 },
+    { id: "6h", ms: 6 * 60 * 60 * 1000 },
+    { id: "all", ms: null }
+  ];
 
   function classifyPresence(nowMs, heartbeatMs, serverStatus, lastFetchMs) {
     if (lastFetchMs == null) return "OFFLINE";
@@ -56,6 +62,7 @@
     var health = (state && state.health) || {};
     var fee = account.fee_allowance || {};
     var activity = (state && state.activity) || {};
+    var identity = (state && state.identity) || {};
     return {
       presence: classifyPresence(nowMs, health.heartbeat_ms, health.status, lastFetchMs),
       service: lastFetchMs == null ? "unreachable" : "reachable",
@@ -85,18 +92,79 @@
       lastTradeAge: formatAge(activity.last_trade_age_ms),
       decisionLatency: formatAge(activity.decision_latency_ms),
       fillLatency: formatAge(activity.fill_latency_ms),
-      heartbeat: formatTime(health.heartbeat_ms)
+      heartbeat: formatTime(health.heartbeat_ms),
+      engineSha: identity.engine_source_sha == null ? "—" : String(identity.engine_source_sha),
+      displayBuild: displayBuild()
     };
+  }
+
+  function displayBuild() {
+    var cfg = root.PAPER_DASHBOARD_CONFIG || {};
+    return cfg.displayBuild ? String(cfg.displayBuild) : "desk-visual-1";
+  }
+
+  function parsePoint(raw, source) {
+    if (!raw) return null;
+    var t = Number(raw.t);
+    if (raw.equity === null || raw.equity === undefined || raw.equity === "") return null;
+    var equity = Number(raw.equity);
+    if (!isFinite(t) || !isFinite(equity)) return null;
+    return { t: t, equity: equity, source: source };
+  }
+
+  function mergeSeries(apiCurve, observed) {
+    var byTime = {};
+    (observed || []).forEach(function (raw) {
+      var point = parsePoint(raw, "observed");
+      if (point) byTime[point.t] = point;
+    });
+    (apiCurve || []).forEach(function (raw) {
+      var point = parsePoint(raw, "api");
+      if (point) byTime[point.t] = point;
+    });
+    return Object.keys(byTime).map(function (key) { return byTime[key]; }).sort(function (a, b) { return a.t - b.t; });
+  }
+
+  function sliceRange(points, rangeId, nowMs) {
+    var usable = (points || []).slice().sort(function (a, b) { return a.t - b.t; });
+    var range = null;
+    for (var i = 0; i < RANGES.length; i += 1) {
+      if (RANGES[i].id === rangeId) range = RANGES[i];
+    }
+    if (!range || range.ms == null) return usable;
+    var start = nowMs - range.ms;
+    return usable.filter(function (point) { return point.t >= start && point.t <= nowMs; });
+  }
+
+  function availableRanges(points, nowMs) {
+    return RANGES.map(function (range) {
+      var sliced = sliceRange(points, range.id, nowMs);
+      return { id: range.id, enabled: sliced.length >= 2, count: sliced.length };
+    });
+  }
+
+  function chartModel(points) {
+    var usable = (points || []).slice().sort(function (a, b) { return a.t - b.t; });
+    if (usable.length < 2) {
+      return { drawable: false, reason: "insufficient_samples", points: usable };
+    }
+    return { drawable: true, reason: null, points: usable };
   }
 
   root.PaperDashboard = {
     STALE_MS: STALE_MS,
     OFFLINE_MS: OFFLINE_MS,
+    RANGES: RANGES,
     classifyPresence: classifyPresence,
     formatUsdc: formatUsdc,
     formatPct: formatPct,
     formatTime: formatTime,
     formatAge: formatAge,
-    renderModel: renderModel
+    renderModel: renderModel,
+    displayBuild: displayBuild,
+    mergeSeries: mergeSeries,
+    sliceRange: sliceRange,
+    availableRanges: availableRanges,
+    chartModel: chartModel
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

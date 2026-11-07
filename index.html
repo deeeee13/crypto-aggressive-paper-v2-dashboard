@@ -8,59 +8,82 @@
 </head>
 <body>
   <div class="banner">PAPER TRADING—NO REAL MONEY</div>
-  <header>
-    <div>
-      <p class="kicker">Hyperliquid perps · BTC ETH SOL HYPE · 1x paper</p>
-      <h1>Aggressive paper desk</h1>
-      <p class="identity" id="note">Read-only public JSON. No wallet. No live orders.</p>
-    </div>
-    <div class="pills">
-      <span id="presence" class="pill">…</span>
-      <span id="service" class="pill">…</span>
-    </div>
-  </header>
-  <main>
-    <p class="identity">Engine <span id="sha">—</span> · deploy <span id="deploy">—</span> · config <span id="config">—</span> · image <span id="image">—</span></p>
-    <section class="grid">
-      <article class="stat"><span>Lifetime baseline</span><strong id="lifetime">—</strong></article>
-      <article class="stat"><span>Wallet cash</span><strong id="cash">—</strong></article>
-      <article class="stat"><span>Equity</span><strong id="equity">—</strong></article>
-      <article class="stat"><span>Lifetime return</span><strong id="return">—</strong></article>
-      <article class="stat"><span>Realized</span><strong id="realized">—</strong></article>
-      <article class="stat"><span>Unrealized</span><strong id="unrealized">—</strong></article>
-      <article class="stat"><span>Fees paid</span><strong id="fees">—</strong></article>
-      <article class="stat"><span>Funding net</span><strong id="funding">—</strong></article>
-    </section>
-    <section class="panel">
-      <div class="row"><span>UTC day baseline <b id="daily-base">—</b></span><span>PnL <b id="daily-pnl">—</b></span></div>
-      <div class="row"><span>Loss consumed <b id="daily-consumed">—</b></span><span>Cap <b id="daily-cap">—</b> · left <b id="daily-left">—</b></span></div>
-      <div class="bar"><i id="loss-bar"></i></div>
-      <p class="identity">Fee allowance left <span id="fee-left">—</span>. Entries stop at the cap. Exits do not.</p>
+  <div class="shell">
+    <header class="top">
+      <div>
+        <p class="kicker">HYPERLIQUID PERPS · BTC ETH SOL HYPE · 1x</p>
+        <h1>PAPER DESK</h1>
+        <p class="note" id="note">Read-only public JSON. No wallet. No live orders.</p>
+      </div>
+      <div class="badges">
+        <span id="presence" class="badge">…</span>
+        <span id="service" class="badge">…</span>
+        <span class="badge bad">PAPER</span>
+      </div>
+    </header>
+    <p class="identity-row">
+      <span>Engine SHA <b id="sha">—</b></span>
+      <span>Display build <b id="display-build">—</b></span>
+      <span>Deploy <b id="deploy">—</b></span>
+      <span>Config <b id="config">—</b></span>
+      <span>Image <b id="image">—</b></span>
+    </p>
+    <section class="hero">
+      <article class="panel chart-panel">
+        <div class="balance" id="equity">—</div>
+        <div class="sub">Lifetime return <span id="return">—</span> · baseline <span id="lifetime">—</span></div>
+        <div class="ranges" id="ranges"></div>
+        <div class="chart-wrap">
+          <svg id="curve" viewBox="0 0 1000 280" role="img" aria-label="Equity from reported samples"></svg>
+          <div id="tip" class="tip"></div>
+          <p id="chart-note" class="empty-chart" hidden>Insufficient samples — no curve is drawn.</p>
+        </div>
+        <p class="sub" id="chart-source">—</p>
+      </article>
+      <aside class="metrics">
+        <article class="metric"><span>WALLET CASH</span><strong id="cash">—</strong></article>
+        <article class="metric"><span>UNREALIZED</span><strong id="unrealized">—</strong></article>
+        <article class="metric"><span>REALIZED</span><strong id="realized">—</strong></article>
+        <article class="metric"><span>FUNDING NET</span><strong id="funding">—</strong></article>
+        <article class="metric"><span>DAILY PNL</span><strong id="daily-pnl">—</strong></article>
+        <article class="metric"><span>WIN RATE</span><strong id="winrate">—</strong></article>
+        <article class="metric wide">
+          <span>DAILY LOSS</span>
+          <strong id="daily-consumed">—</strong>
+          <div class="sub">baseline <span id="daily-base">—</span> · cap <span id="daily-cap">—</span> · left <span id="daily-left">—</span></div>
+          <div class="bar"><i id="loss-bar"></i></div>
+        </article>
+        <article class="metric wide">
+          <span>FEE ALLOWANCE</span>
+          <strong id="fee-left">—</strong>
+          <div class="sub">rolling used <span id="fee-used">—</span> · lifetime fees <span id="fees">—</span> · exits are not blocked</div>
+        </article>
+        <article class="metric"><span>WINS / LOSSES</span><strong id="wins">—</strong></article>
+        <article class="metric"><span>MAX DRAWDOWN</span><strong id="dd">—</strong></article>
+      </aside>
     </section>
     <section class="markets" id="markets"></section>
-    <section class="split">
-      <article class="panel"><h2>Open positions</h2><div id="positions"></div></article>
-      <article class="panel"><h2>12h funnel</h2><div id="funnel"></div>
-        <p class="identity">No trade reason <span id="no-trade">—</span></p>
-        <p class="identity">Last trade age <span id="last-trade">—</span></p>
-        <p class="identity">Heartbeat <span id="heartbeat">—</span></p>
-        <p class="identity" id="latency">—</p>
-      </article>
+    <section class="lower panel">
+      <div class="section-title">
+        <h2>ACTIVITY</h2>
+        <span class="sub" id="no-trade">—</span>
+      </div>
+      <p class="sub">Last trade <span id="last-trade">—</span> · heartbeat <span id="heartbeat">—</span> · <span id="latency">—</span></p>
+      <div class="scroll" id="funnel"></div>
+      <h2 style="margin-top:14px">OPEN POSITIONS</h2>
+      <div class="scroll" id="positions"></div>
+      <h2 style="margin-top:14px">ASSET ACTIVITY</h2>
+      <div class="scroll" id="activity"></div>
+      <h2 style="margin-top:14px">CLOSED TRADES</h2>
+      <div class="scroll" id="trades"></div>
+      <div class="pager">
+        <button id="prev" type="button">Previous</button>
+        <button id="next" type="button">Next</button>
+        <span id="page" class="sub"></span>
+      </div>
+      <p class="sub" id="context" style="margin-top:10px">—</p>
     </section>
-    <section class="panel">
-      <h2>Equity</h2>
-      <svg id="curve" viewBox="0 0 1000 160" preserveAspectRatio="none"></svg>
-      <p class="identity">Wins / losses <span id="wins">—</span> · win rate <span id="winrate">—</span> · max drawdown <span id="dd">—</span></p>
-    </section>
-    <section class="panel"><h2>Asset activity</h2><div id="activity"></div></section>
-    <section class="panel">
-      <h2>Closed trades</h2>
-      <div id="trades"></div>
-      <p><button id="prev" type="button">Previous</button> <button id="next" type="button">Next</button> <span id="page" class="identity"></span></p>
-    </section>
-    <section class="panel"><h2>Context</h2><p id="context" class="identity">—</p></section>
-  </main>
-  <footer>Paper trading only. The page ages the worker heartbeat itself. A cached ACTIVE payload goes STALE, then OFFLINE.</footer>
+  </div>
   <script src="config.js"></script>
   <script src="logic.js"></script>
   <script src="app.js"></script>
