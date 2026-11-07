@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paper desk — no real money</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="banner">PAPER TRADING—NO REAL MONEY</div>
+  <header>
+    <div>
+      <p class="kicker">Hyperliquid perps · BTC ETH SOL HYPE · 1x paper</p>
+      <h1>Aggressive paper desk</h1>
+      <p class="identity" id="note">Read-only public JSON. No wallet. No live orders.</p>
+    </div>
+    <div class="pills">
+      <span id="presence" class="pill">…</span>
+      <span id="service" class="pill">…</span>
+    </div>
+  </header>
+  <main>
+    <p class="identity">Engine <span id="sha">—</span> · deploy <span id="deploy">—</span> · config <span id="config">—</span> · image <span id="image">—</span></p>
+    <section class="grid">
+      <article class="stat"><span>Lifetime baseline</span><strong id="lifetime">—</strong></article>
+      <article class="stat"><span>Wallet cash</span><strong id="cash">—</strong></article>
+      <article class="stat"><span>Equity</span><strong id="equity">—</strong></article>
+      <article class="stat"><span>Lifetime return</span><strong id="return">—</strong></article>
+      <article class="stat"><span>Realized</span><strong id="realized">—</strong></article>
+      <article class="stat"><span>Unrealized</span><strong id="unrealized">—</strong></article>
+      <article class="stat"><span>Fees paid</span><strong id="fees">—</strong></article>
+      <article class="stat"><span>Funding net</span><strong id="funding">—</strong></article>
+    </section>
+    <section class="panel">
+      <div class="row"><span>UTC day baseline <b id="daily-base">—</b></span><span>PnL <b id="daily-pnl">—</b></span></div>
+      <div class="row"><span>Loss consumed <b id="daily-consumed">—</b></span><span>Cap <b id="daily-cap">—</b> · left <b id="daily-left">—</b></span></div>
+      <div class="bar"><i id="loss-bar"></i></div>
+      <p class="identity">Fee allowance left <span id="fee-left">—</span>. Entries stop at the cap. Exits do not.</p>
+    </section>
+    <section class="markets" id="markets"></section>
+    <section class="split">
+      <article class="panel"><h2>Open positions</h2><div id="positions"></div></article>
+      <article class="panel"><h2>12h funnel</h2><div id="funnel"></div>
+        <p class="identity">No trade reason <span id="no-trade">—</span></p>
+        <p class="identity">Last trade age <span id="last-trade">—</span></p>
+        <p class="identity">Heartbeat <span id="heartbeat">—</span></p>
+        <p class="identity" id="latency">—</p>
+      </article>
+    </section>
+    <section class="panel">
+      <h2>Equity</h2>
+      <svg id="curve" viewBox="0 0 1000 160" preserveAspectRatio="none"></svg>
+      <p class="identity">Wins / losses <span id="wins">—</span> · win rate <span id="winrate">—</span> · max drawdown <span id="dd">—</span></p>
+    </section>
+    <section class="panel"><h2>Asset activity</h2><div id="activity"></div></section>
+    <section class="panel">
+      <h2>Closed trades</h2>
+      <div id="trades"></div>
+      <p><button id="prev" type="button">Previous</button> <button id="next" type="button">Next</button> <span id="page" class="identity"></span></p>
+    </section>
+    <section class="panel"><h2>Context</h2><p id="context" class="identity">—</p></section>
+  </main>
+  <footer>Paper trading only. The page ages the worker heartbeat itself. A cached ACTIVE payload goes STALE, then OFFLINE.</footer>
+  <script src="config.js"></script>
+  <script src="logic.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
