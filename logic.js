@@ -100,7 +100,46 @@
 
   function displayBuild() {
     var cfg = root.PAPER_DASHBOARD_CONFIG || {};
-    return cfg.displayBuild ? String(cfg.displayBuild) : "desk-visual-3";
+    return cfg.displayBuild ? String(cfg.displayBuild) : "desk-visual-4";
+  }
+
+  function feeGate(account) {
+    account = account || {};
+    var fee = account.fee_allowance || {};
+    var lifetime = formatPrice(account.fees_paid);
+    var observed = formatPrice(fee.observed_24h_usdc != null ? fee.observed_24h_usdc : fee.used_usdc);
+    var disabled = fee.gate === "disabled" || fee.gates_entries === false;
+    if (disabled) {
+      return {
+        state: "disabled",
+        label: "FEE GATE DISABLED",
+        headline: "NOT AN ENTRY GATE",
+        detail: "Lifetime fees " + lifetime + ". Observed 24h fees " + observed + ".",
+        historical: "Fee rejects in the activity count are historical. They do not block a new entry.",
+        cap: null,
+        remaining: null
+      };
+    }
+    if (fee.gates_entries_only === true && fee.cap_usdc != null && fee.cap_usdc !== "") {
+      return {
+        state: "active",
+        label: "FEE ALLOWANCE LEFT",
+        headline: formatUsdc(fee.remaining_usdc) + " of " + formatUsdc(fee.cap_usdc),
+        detail: "This response still reports an entry allowance. Lifetime fees " + lifetime + ".",
+        historical: "Fee rejects in this window match the allowance this response reports.",
+        cap: formatUsdc(fee.cap_usdc),
+        remaining: formatUsdc(fee.remaining_usdc)
+      };
+    }
+    return {
+      state: "unreported",
+      label: "FEE GATE UNREPORTED",
+      headline: "—",
+      detail: "This response does not state an entry fee allowance. No zero cap is assumed.",
+      historical: "",
+      cap: null,
+      remaining: null
+    };
   }
 
   function formatPrice(value) {
@@ -297,6 +336,7 @@
     classifyPresence: classifyPresence,
     formatUsdc: formatUsdc,
     formatPrice: formatPrice,
+    feeGate: feeGate,
     formatSignedUsdc: formatSignedUsdc,
     pnlTone: pnlTone,
     toneFor: toneFor,

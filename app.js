@@ -1,5 +1,5 @@
 (function () {
-  var cfg = window.PAPER_DASHBOARD_CONFIG || { apiBase: "", pollMs: 20000, displayBuild: "desk-visual-3" };
+  var cfg = window.PAPER_DASHBOARD_CONFIG || { apiBase: "", pollMs: 20000, displayBuild: "desk-visual-4" };
   var page = 1;
   var lastFetchMs = null;
   var lastState = null;
@@ -207,11 +207,14 @@
     text("daily-cap", model.dailyCap);
     text("daily-left", model.dailyRemaining);
     text("fees", model.fees);
-    text("fee-used", model.feeUsed);
+    var gate = window.PaperDashboard.feeGate(account);
+    text("fee-label", gate.label);
+    text("fee-left", gate.headline);
+    text("fee-detail", gate.detail);
+    text("fee-history", gate.historical);
     text("wins", model.wins + " / " + model.losses);
     text("winrate", model.winRate);
     text("dd", model.maxDd);
-    text("fee-left", model.feeRemaining + " of " + model.feeCap);
     text("no-trade", model.noTradeReason === "—" ? "—" : "No trade in 12h: " + model.noTradeReason);
     text("last-trade", model.lastTradeAge);
     text("heartbeat", model.heartbeat);

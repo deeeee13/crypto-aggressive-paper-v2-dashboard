@@ -81,10 +81,10 @@
       </div>
       <p class="sub">UTC day baseline <span id="daily-base">—</span></p>
       <div class="bar" aria-hidden="true"><i id="loss-bar"></i></div>
-      <article class="fee-row">
-        <span>FEE ALLOWANCE LEFT</span>
+      <article class="fee-row" id="fee-card">
+        <span id="fee-label">FEE GATE</span>
         <strong id="fee-left">—</strong>
-        <p class="sub">rolling used <span id="fee-used">—</span> · lifetime fees <span id="fees">—</span> · exits are not blocked</p>
+        <p class="sub" id="fee-detail">lifetime fees <span id="fees">—</span></p>
       </article>
     </section>
 
@@ -119,6 +119,7 @@
       </p>
       <p class="sub">Last trade <span id="last-trade">—</span> · heartbeat <span id="heartbeat">—</span> · <span id="latency">—</span></p>
       <div id="funnel" class="stat-grid"></div>
+      <p class="sub" id="fee-history"></p>
       <h2 class="history-title subhead">ASSET ACTIVITY</h2>
       <div id="activity" class="pos-grid"></div>
       <p class="sub" id="context">—</p>

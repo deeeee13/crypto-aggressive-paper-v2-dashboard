@@ -4,5 +4,5 @@
 window.PAPER_DASHBOARD_CONFIG = {
   apiBase: "https://aggressive-paper-v2-production.up.railway.app",
   pollMs: 20000,
-  displayBuild: "desk-visual-3"
+  displayBuild: "desk-visual-4"
 };
